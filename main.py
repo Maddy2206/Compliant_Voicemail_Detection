@@ -4,7 +4,10 @@ import librosa
 import warnings
 warnings.filterwarnings("ignore")
 
-VOICEMAIL_DIR = "/kaggle/input/voicemails/Voicemails - SWE Intern"
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+VOICEMAIL_DIR = os.path.join(BASE_DIR, "Voicemails")
+
 SAMPLE_RATE = 16000
 CHUNK_DURATION = 0.5        
 SILENCE_DB_THRESHOLD = -40  
@@ -66,17 +69,35 @@ class VoicemailDropDetector:
 
         return None
 
-detector = VoicemailDropDetector()
-results = {}
+def main():
+    detector = VoicemailDropDetector()
+    results = {}
 
-print("Processing voicemails...\n")
+    print("Processing voicemails...\n")
 
-for file in sorted(os.listdir(VOICEMAIL_DIR)):
-    if file.lower().endswith(".wav"):
+    if not os.path.isdir(VOICEMAIL_DIR):
+        print(f"❌ Voicemail directory not found: {VOICEMAIL_DIR}")
+        print("Place .wav files in the Voicemails directory (next to main.py) or update VOICEMAIL_DIR.")
+        return
+
+    wav_files = [f for f in sorted(os.listdir(VOICEMAIL_DIR)) if f.lower().endswith(".wav")]
+    if not wav_files:
+        print(f"No .wav files found in {VOICEMAIL_DIR}")
+        return
+
+    for file in wav_files:
         path = os.path.join(VOICEMAIL_DIR, file)
-        drop_ts = detector.process(path)
+        try:
+            drop_ts = detector.process(path)
+        except Exception as e:
+            print(f"Error processing {file}: {e}")
+            drop_ts = None
         results[file] = drop_ts
 
-print("\n=== FINAL RESULTS ===")
-for k, v in results.items():
-    print(f"{k}: {v}")
+    print("\n=== FINAL RESULTS ===")
+    for k, v in results.items():
+        print(f"{k}: {v}")
+
+
+if __name__ == "__main__":
+    main()
